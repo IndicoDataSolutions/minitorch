@@ -12,6 +12,7 @@ def render_train_interface(
     TrainCls, graph=True, hidden_layer=True, parameter_control=False
 ):
     datasets_map = minitorch.datasets
+    st.write("## Sandbox for Model Training")
 
     st.markdown("### Dataset")
     col1, col2 = st.beta_columns(2)
@@ -31,7 +32,7 @@ def render_train_interface(
     st.markdown("### Model")
     if hidden_layer:
         hidden_layers = st.number_input(
-            "Size of hidden layer", min_value=1, max_value=10, step=1, value=2
+            "Size of hidden layer", min_value=1, max_value=200, step=1, value=2
         )
     else:
         hidden_layers = 0
@@ -57,7 +58,7 @@ def render_train_interface(
             )
             p.update(value)
 
-    oned = st.checkbox("One-D", False)
+    oned = st.checkbox("Show X-Axis Only (For Simple)", False)
 
     def plot():
         if hasattr(train, "run_many"):
@@ -73,10 +74,11 @@ def render_train_interface(
                 out = [(x.data if hasattr(x, "data") else x) for x in out]
                 return out
 
-        fig = plots.plot_out(dataset, contour, size=25, oned=oned)
+        fig = plots.plot_out(dataset, contour, size=15, oned=oned)
         fig.update_layout(width=600, height=600)
         return fig
 
+    st.markdown("### Initial setting")
     st.write(plot())
 
     if hasattr(train, "train"):
@@ -104,35 +106,34 @@ def render_train_interface(
 
     df = []
 
+    def log_fn(epoch, total_loss, correct, losses):
+        time_elapsed = time.time() - start_time
+        st_progress.progress(epoch / max_epochs)
+        time_per_epoch = time_elapsed / (epoch + 1)
+        st_epoch_timer.markdown(
+            "Epoch {}/{}. Time per epoch: {:,.3f}s. Time left: {:,.2f}s.".format(
+                epoch,
+                max_epochs,
+                time_per_epoch,
+                (max_epochs - epoch) * time_per_epoch,
+            )
+        )
+        df.append({"epoch": epoch, "loss": total_loss, "correct": correct})
+        st_epoch_stats.write(pd.DataFrame(reversed(df)))
+
+        st_epoch_image.plotly_chart(plot())
+        loss_graph = go.Scatter(mode="lines", x=list(range(len(losses))), y=losses)
+        fig = go.Figure(loss_graph)
+        fig.update_layout(
+            title="Loss Graph",
+            xaxis=dict(range=[0, max_epochs]),
+            yaxis=dict(range=[0, max(losses)]),
+        )
+        st_epoch_plot.plotly_chart(fig)
+
+        print(f"Epoch: {epoch}/{max_epochs}, loss: {total_loss}, correct: {correct}")
+
     if hasattr(train, "train") and st_train_button.button("Train Model"):
-
-        def log_fn(epoch, total_loss, correct, losses):
-            time_elapsed = time.time() - start_time
-            st_progress.progress(epoch / max_epochs)
-            time_per_epoch = time_elapsed / (epoch + 1)
-            st_epoch_timer.markdown(
-                "Epoch {}/{}. Time per epoch: {:,.3f}s. Time left: {:,.2f}s.".format(
-                    epoch,
-                    max_epochs,
-                    time_per_epoch,
-                    (max_epochs - epoch) * time_per_epoch,
-                )
-            )
-            df.append({"epoch": epoch, "loss": total_loss, "correct": correct})
-            st_epoch_stats.write(pd.DataFrame(reversed(df)))
-
-            st_epoch_image.plotly_chart(plot())
-            loss_graph = go.Scatter(mode="lines", x=list(range(len(losses))), y=losses)
-            fig = go.Figure(loss_graph)
-            fig.update_layout(
-                title="Loss Graph",
-                xaxis=dict(range=[0, max_epochs]),
-                yaxis=dict(range=[0, max(losses)]),
-            )
-            st_epoch_plot.plotly_chart(fig)
-
-            print(
-                f"Epoch: {epoch}/{max_epochs}, loss: {total_loss}, correct: {correct}"
-            )
-
         train.train(dataset, learning_rate, max_epochs, log_fn)
+    else:
+        log_fn(0, 0, 0, [0])
