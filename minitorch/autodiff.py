@@ -191,7 +191,7 @@ class History:
             list of numbers : a derivative with respect to `inputs`
         """
         # TODO: Implement for Task 1.4.
-        raise NotImplementedError('Need to implement for Task 1.4')
+        return [d for _, d in self.last_fn.chain_rule(self.ctx, self.inputs, d_output)]
 
 
 class FunctionBase:
@@ -274,7 +274,10 @@ class FunctionBase:
         # Tip: Note when implementing this function that
         # cls.backward may return either a value or a tuple.
         # TODO: Implement for Task 1.3.
-        raise NotImplementedError('Need to implement for Task 1.3')
+        derivatives = cls.backward(ctx, d_output)
+        return [
+            (x, deriv) for x, deriv in zip(inputs, derivatives) if not is_constant(x)
+        ]
 
 
 # Algorithms for backpropagation
@@ -295,14 +298,29 @@ def topological_sort(variable):
         list of Variables : Non-constant Variables in topological order
                             starting from the right.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+
+    sorted_vars = []
+    visited = set()
+    frontier = [variable]
+    while frontier:
+        v = frontier.pop(0)
+        sorted_vars.append(v)
+        visited.add(v.name)
+        if not v.history.inputs:
+            continue
+        for input_var in v.history.inputs:
+            if is_constant(input_var):
+                continue
+            if input_var.name not in visited:
+                frontier.append(input_var)
+
+    return sorted_vars
 
 
 def backpropagate(variable, deriv):
     """
     Runs backpropagation on the computation graph in order to
-    compute derivatives for the leave nodes.
+    compute derivatives for the leaf nodes.
 
     See :doc:`backpropagate` for details on the algorithm.
 
@@ -313,4 +331,12 @@ def backpropagate(variable, deriv):
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
     # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    sorted_vars = topological_sort(variable)
+
+    for var in sorted_vars:
+        derivs = var.history.backprop_step(var.derivative)
+        i = 0
+        for left_var in var.history.inputs:
+            if not is_constant(left_var) and derivs[i] is not None:
+                left_var.accumulate_derivative(derivs[i])
+                i += 1
