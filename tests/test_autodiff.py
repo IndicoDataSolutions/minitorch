@@ -131,6 +131,10 @@ def test_backprop3():
 @pytest.mark.task1_4
 def test_backprop4():
     # Example 4: F1(F1(0, v1), F1(0, v1))
+    """
+    0 --> 1 --> 2 --> 4 -->
+          \ --> 3 --/
+    """
     var0 = minitorch.Scalar(0)
     var1 = Function1.apply(0, var0)
     var2 = Function1.apply(0, var1)

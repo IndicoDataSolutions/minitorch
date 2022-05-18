@@ -74,7 +74,7 @@ class Variable:
         Args:
             val (number): value to be accumulated
         """
-        assert self.is_leaf(), "Only leaf variables can have derivatives."
+        # assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self._derivative is None:
             self._derivative = self.zeros()
         self._derivative += val
@@ -191,6 +191,9 @@ class History:
             list of numbers : a derivative with respect to `inputs`
         """
         # TODO: Implement for Task 1.4.
+        if self.last_fn is None:
+            return []
+
         return [d for _, d in self.last_fn.chain_rule(self.ctx, self.inputs, d_output)]
 
 
@@ -275,6 +278,12 @@ class FunctionBase:
         # cls.backward may return either a value or a tuple.
         # TODO: Implement for Task 1.3.
         derivatives = cls.backward(ctx, d_output)
+
+        if not isinstance(derivatives, tuple):
+            derivatives = (derivatives,)
+
+        assert len(derivatives) == len(inputs)
+
         return [
             (x, deriv) for x, deriv in zip(inputs, derivatives) if not is_constant(x)
         ]
@@ -300,18 +309,19 @@ def topological_sort(variable):
     """
 
     sorted_vars = []
-    visited = set()
+    to_be_visited = set([variable.name])
     frontier = [variable]
+
     while frontier:
         v = frontier.pop(0)
         sorted_vars.append(v)
-        visited.add(v.name)
         if not v.history.inputs:
             continue
         for input_var in v.history.inputs:
             if is_constant(input_var):
                 continue
-            if input_var.name not in visited:
+            if input_var.name not in to_be_visited:
+                to_be_visited.add(input_var.name)
                 frontier.append(input_var)
 
     return sorted_vars
@@ -331,12 +341,30 @@ def backpropagate(variable, deriv):
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
     # TODO: Implement for Task 1.4.
+
+    # Sort our variables from graph output to graph input
     sorted_vars = topological_sort(variable)
 
+    # In order to find a's d_output we need to sum contributions
+    # from backprop_step of b and c
+    # a --> b
+    #  \--> c
+    if not sorted_vars:
+        return
+
+    variable.accumulate_derivative(deriv)
+    assert sorted_vars[0] == variable
+
     for var in sorted_vars:
+        if var.history.inputs is None:
+            continue
+
+        # Find the derivative contribution of this variable
+        # to each of it's inputs
         derivs = var.history.backprop_step(var.derivative)
-        i = 0
-        for left_var in var.history.inputs:
-            if not is_constant(left_var) and derivs[i] is not None:
-                left_var.accumulate_derivative(derivs[i])
-                i += 1
+
+        filtered_inputs = [x for x in var.history.inputs if not is_constant(x)]
+        for filtered_input, deriv in zip(filtered_inputs, derivs):
+            if deriv is not None:
+                # Deriv here would be contribution of b to a's d_output
+                filtered_input.accumulate_derivative(deriv)

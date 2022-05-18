@@ -48,7 +48,7 @@ class Scalar(Variable):
         self.data = float(v)
 
     def __repr__(self):
-        return "Scalar(%f)" % self.data
+        return f"Scalar({self.data}, name={self.name})"
 
     def __mul__(self, b):
         return Mul.apply(self, b)
@@ -186,7 +186,7 @@ class Mul(ScalarFunction):
     @staticmethod
     def backward(ctx, d_output):
         a, b = ctx.saved_values
-        return  b * d_output, a * d_output
+        return b * d_output, a * d_output
 
 
 class Inv(ScalarFunction):
@@ -203,10 +203,9 @@ class Inv(ScalarFunction):
         return operators.inv_back(a, d_output)
 
 
-
 class Neg(ScalarFunction):
     "Negation function"
-    
+
     @staticmethod
     def forward(ctx, a):
         return operators.neg(a)
@@ -223,7 +222,6 @@ class Sigmoid(ScalarFunction):
     def forward(ctx, a):
         ctx.save_for_backward(a)
         return operators.sigmoid(a)
-
 
     @staticmethod
     def backward(ctx, d_output):
@@ -253,7 +251,6 @@ class Exp(ScalarFunction):
         ctx.save_for_backward(a)
         return operators.exp(a)
 
-
     @staticmethod
     def backward(ctx, d_output):
         a = ctx.saved_values
@@ -278,7 +275,6 @@ class EQ(ScalarFunction):
     @staticmethod
     def forward(ctx, a, b):
         return operators.eq(a, b)
-
 
     @staticmethod
     def backward(ctx, d_output):
