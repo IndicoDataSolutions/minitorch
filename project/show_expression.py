@@ -1,31 +1,20 @@
-import minitorch
+"""
+Be sure you have the extra requirements installed.
+
+>>> pip install -r requirements.extra.txt
+"""
+
 import networkx as nx
+import minitorch
 
 
-def build_expression(code):
-    out = eval(
-        code,
-        {
-            "x": minitorch.Scalar(1.0, name="x"),
-            "y": minitorch.Scalar(1.0, name="y"),
-            "z": minitorch.Scalar(1.0, name="z"),
-        },
-    )
-    out.name = "out"
-    return out
-
-
-def build_tensor_expression(code):
-    out = eval(
-        code,
-        {
-            "x": minitorch.tensor([[1.0, 2.0, 3.0]], requires_grad=True),
-            "y": minitorch.tensor([[1.0, 2.0, 3.0]], requires_grad=True),
-            "z": minitorch.tensor([[1.0, 2.0, 3.0]], requires_grad=True),
-        },
-    )
-    out.name = "out"
-    return out
+## Create an autodiff expression here.
+def expression():
+    x = minitorch.Scalar(1.0, name="x")
+    y = minitorch.Scalar(1.0, name="y")
+    z = (x * x) * y + 10.0 * x
+    z.name = "z"
+    return z
 
 
 class GraphBuilder:
@@ -57,7 +46,9 @@ class GraphBuilder:
             (cur,) = queue[0]
             queue = queue[1:]
 
-            if minitorch.is_constant(cur) or cur.is_leaf():
+            if cur.history is None:
+                continue
+            elif cur.is_leaf():
                 continue
             else:
                 op = "%s (Op %d)" % (cur.history.last_fn.__name__, self.op_id)
@@ -70,5 +61,18 @@ class GraphBuilder:
                 for input in cur.history.inputs:
                     if not isinstance(input, minitorch.Variable):
                         continue
-                    queue.append([input])
+
+                    seen = False
+                    for s in queue:
+                        if s[0] == input:
+                            seen = True
+                    if not seen:
+                        queue.append([input])
         return G
+
+
+def make_graph(y):
+    G = GraphBuilder().run(y)
+    # G.graph["graph"] = {"rankdir": "LR"}
+    output_graphviz_svg = nx.nx_pydot.to_pydot(G).create_svg()
+    return output_graphviz_svg
