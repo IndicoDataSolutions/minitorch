@@ -282,10 +282,8 @@ class FunctionBase:
         if not isinstance(derivatives, tuple):
             derivatives = (derivatives,)
 
-        assert len(derivatives) == len(inputs)
-
         return [
-            (x, deriv) for x, deriv in zip(inputs, derivatives) if not is_constant(x)
+            (x, deriv) for x, deriv in zip((i for i in inputs if not is_constant(i)), derivatives)
         ]
 
 
