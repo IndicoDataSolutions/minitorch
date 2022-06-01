@@ -269,7 +269,7 @@ class LT(ScalarFunction):
 
     @staticmethod
     def backward(ctx, d_output):
-        return 0
+        return 0, 0
 
 
 class EQ(ScalarFunction):
@@ -281,7 +281,7 @@ class EQ(ScalarFunction):
 
     @staticmethod
     def backward(ctx, d_output):
-        return 0
+        return 0, 0
 
 
 def derivative_check(f, *scalars):
@@ -304,7 +304,6 @@ Derivative check at arguments f(%s) and received derivative f'=%f for argument %
 but was expecting derivative f'=%f from central difference."""
     for i, x in enumerate(scalars):
         check = central_difference(f, *vals, arg=i)
-        print("derivative_check", str([x.data for x in scalars]), x.derivative, i, check)
         np.testing.assert_allclose(
             x.derivative,
             check.data,
