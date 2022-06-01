@@ -22,9 +22,12 @@ def central_difference(f, *vals, arg=0, epsilon=1e-6):
     Returns:
         float : An approximation of :math:`f'_i(x_0, \ldots, x_{n-1})`
     """
-    fx_0 = f(*[v - epsilon if vi == arg else v for vi, v in enumerate(vals)])
-    fx_0_eps = f(*[v + epsilon if vi == arg else v for vi, v in enumerate(vals)])
-    return (fx_0_eps - fx_0) / (2 * epsilon)
+    x_0 = [v - epsilon if vi == arg else v for vi, v in enumerate(vals)]
+    x_1 = [v + epsilon if vi == arg else v for vi, v in enumerate(vals)]
+    fx_0 = f(*x_0)
+    fx_0_eps = f(*x_1)
+    output = (fx_0_eps - fx_0) / (2 * epsilon)
+    return output
 
 
 # ## Task 1.2 and 1.4
@@ -226,7 +229,7 @@ class Sigmoid(ScalarFunction):
     @staticmethod
     def backward(ctx, d_output):
         a = ctx.saved_values
-        return operators.sigmoid(a) * operators.sub(1.0, operators.sigmoid(a))
+        return operators.sigmoid(a) * (1.0 - operators.sigmoid(a))
 
 
 class ReLU(ScalarFunction):
@@ -254,7 +257,7 @@ class Exp(ScalarFunction):
     @staticmethod
     def backward(ctx, d_output):
         a = ctx.saved_values
-        return operators.mul(d_output, operator.exp(a))
+        return operators.mul(d_output, operators.exp(a))
 
 
 class LT(ScalarFunction):
@@ -266,7 +269,7 @@ class LT(ScalarFunction):
 
     @staticmethod
     def backward(ctx, d_output):
-        return 0
+        return 0, 0
 
 
 class EQ(ScalarFunction):
@@ -278,7 +281,7 @@ class EQ(ScalarFunction):
 
     @staticmethod
     def backward(ctx, d_output):
-        return 0
+        return 0, 0
 
 
 def derivative_check(f, *scalars):
@@ -301,7 +304,6 @@ Derivative check at arguments f(%s) and received derivative f'=%f for argument %
 but was expecting derivative f'=%f from central difference."""
     for i, x in enumerate(scalars):
         check = central_difference(f, *vals, arg=i)
-        print(str([x.data for x in scalars]), x.derivative, i, check)
         np.testing.assert_allclose(
             x.derivative,
             check.data,

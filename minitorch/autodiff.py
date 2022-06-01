@@ -281,8 +281,8 @@ class FunctionBase:
 
         if not isinstance(derivatives, tuple):
             derivatives = (derivatives,)
-
-        assert len(derivatives) == len(inputs)
+        
+        assert len(inputs) == len(derivatives)
 
         return [
             (x, deriv) for x, deriv in zip(inputs, derivatives) if not is_constant(x)
@@ -362,8 +362,8 @@ def backpropagate(variable, deriv):
         # Find the derivative contribution of this variable
         # to each of it's inputs
         derivs = var.history.backprop_step(var.derivative)
-
         filtered_inputs = [x for x in var.history.inputs if not is_constant(x)]
+        assert len(filtered_inputs) == len(derivs)
         for filtered_input, deriv in zip(filtered_inputs, derivs):
             if deriv is not None:
                 # Deriv here would be contribution of b to a's d_output

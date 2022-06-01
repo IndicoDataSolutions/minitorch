@@ -75,6 +75,9 @@ def test_two_args(fn, t1, t2):
 @pytest.mark.task1_4
 @pytest.mark.parametrize("fn", one_arg)
 def test_one_derivative(fn, t1):
+    print("==========")
+    print(t1, type(t1), vars(t1))
+    print(vars(t1.history))
     name, _, scalar_fn = fn
     derivative_check(scalar_fn, t1)
 
