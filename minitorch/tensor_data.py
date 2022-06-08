@@ -24,8 +24,7 @@ def index_to_position(index, strides):
         int : position in storage
     """
 
-    # TODO: Implement for Task 2.1.
-    raise NotImplementedError('Need to implement for Task 2.1')
+    return sum([i*s for i,s in zip(index, strides)])
 
 
 def to_index(ordinal, shape, out_index):
@@ -44,16 +43,22 @@ def to_index(ordinal, shape, out_index):
       None : Fills in `out_index`.
 
     """
-    # TODO: Implement for Task 2.1.
-    raise NotImplementedError('Need to implement for Task 2.1')
+    strides = strides_from_shape(shape)
+    for i, s in enumerate(strides):
+        out_index[i] = ordinal // s
+        ordinal = ordinal % s 
 
 
 def broadcast_index(big_index, big_shape, shape, out_index):
     """
     Convert a `big_index` into `big_shape` to a smaller `out_index`
     into `shape` following broadcasting rules. In this case
-    it may be larger or with more dimensions than the `shape`
-    given. Additional dimensions may need to be mapped to 0 or
+    it may be larger or with more dimensions than the `shape`# TODO: Implement for Task 2.1.
+    raise NotImplementedError('Need to implement for Task 2.1')
+
+    given. Additional dimensions may need to be mapped to 0 or# TODO: Implement for Task 2.1.
+    raise NotImplementedError('Need to implement for Task 2.1')
+
     removed.
 
     Args:
