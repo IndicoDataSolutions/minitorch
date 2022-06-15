@@ -2,6 +2,7 @@ import random
 from .operators import prod
 from numpy import array, float64, ndarray
 import numba
+import itertools
 
 MAX_DIMS = 32
 
@@ -88,8 +89,14 @@ def shape_broadcast(shape1, shape2):
     Raises:
         IndexingError : if cannot broadcast
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
+    output_shape = []
+    for pair in itertools.zip_longest(reversed(shape1), reversed(shape2), fillvalue=1):
+        if min(pair) != 1 and pair[0] != pair[1]:
+            raise IndexingError(f"Cannot broadcast tensor of {shape1} with tensor of {shape2}")
+
+        output_shape.insert(0, max(pair))
+    
+    return tuple(output_shape)
 
 
 def strides_from_shape(shape):
@@ -195,9 +202,10 @@ class TensorData:
         assert list(sorted(order)) == list(
             range(len(self.shape))
         ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
-
-        # TODO: Implement for Task 2.1.
-        raise NotImplementedError('Need to implement for Task 2.1')
+        
+        strides = tuple(self.strides[idx] for idx in order)
+        shape = tuple(self.shape[idx] for idx in order)
+        return TensorData(shape=shape, storage=self._storage, strides=strides)
 
     def to_string(self):
         s = ""
