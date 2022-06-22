@@ -21,7 +21,11 @@ def test_create(t1):
 def test_one_args(fn, t1):
     name, base_fn, tensor_fn = fn
     t2 = tensor_fn(t1)
+    print("input", t1.to_numpy(), "output", t2.to_numpy(), "function", tensor_fn)
+    print("T1", repr(t1._tensor))
+    print("t2", repr(t2._tensor))
     for ind in t2._tensor.indices():
+        print("tensor_fn", t2[ind], "scalar_fn", base_fn(t1[ind]))
         assert_close(t2[ind], base_fn(t1[ind]))
 
 

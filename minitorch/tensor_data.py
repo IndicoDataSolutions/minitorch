@@ -25,7 +25,7 @@ def index_to_position(index, strides):
         int : position in storage
     """
 
-    return sum([i*s for i,s in zip(index, strides)])
+    return sum([i * s for i, s in zip(index, strides)])
 
 
 def to_index(ordinal, shape, out_index):
@@ -44,22 +44,18 @@ def to_index(ordinal, shape, out_index):
       None : Fills in `out_index`.
 
     """
+    # NOTE: does not function unless default strides
     strides = strides_from_shape(shape)
     for i, s in enumerate(strides):
         out_index[i] = ordinal // s
-        ordinal = ordinal % s 
-
+        ordinal = ordinal % s
 
 def broadcast_index(big_index, big_shape, shape, out_index):
     """
     Convert a `big_index` into `big_shape` to a smaller `out_index`
     into `shape` following broadcasting rules. In this case
-    it may be larger or with more dimensions than the `shape`# TODO: Implement for Task 2.1.
-    raise NotImplementedError('Need to implement for Task 2.1')
-
-    given. Additional dimensions may need to be mapped to 0 or# TODO: Implement for Task 2.1.
-    raise NotImplementedError('Need to implement for Task 2.1')
-
+    it may be larger or with more dimensions than the `shape`
+    given. Additional dimensions may need to be mapped to 0 or
     removed.
 
     Args:
@@ -71,9 +67,18 @@ def broadcast_index(big_index, big_shape, shape, out_index):
     Returns:
         None : Fills in `out_index`.
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
-
+    for i, (big_index_i, big_shape_i, shape_i) in enumerate(
+        zip(
+            reversed(big_index),
+            reversed(big_shape),
+            reversed(shape),
+        )
+    ):
+        out_i = len(out_index) - i - 1
+        if shape_i == 0:
+            out_index[out_i] = 0
+        else:
+            out_index[out_i] = big_index_i
 
 def shape_broadcast(shape1, shape2):
     """
@@ -129,6 +134,8 @@ class TensorData:
         self.size = int(prod(shape))
         self.shape = shape
         assert len(self._storage) == self.size
+    def __repr__(self):
+        return f"TensorData(storage={self._storage}, strides={self._strides}, shape={self._shape})"
 
     def to_cuda_(self):  # pragma: no cover
         if not numba.cuda.is_cuda_array(self._storage):
