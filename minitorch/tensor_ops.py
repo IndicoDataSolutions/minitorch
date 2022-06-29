@@ -40,14 +40,14 @@ def tensor_map(fn):
 
     def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
         # TODO: extend to the broadcasting case
-        print("In storage", in_storage)
-        for i in range(len(in_storage)):
-            out_index = [0 for _ in out_shape]
-            to_index(i, in_shape, out_index)
-            index_to_position(out_index, out_strides)
-            print(f"index to position = {index_to_position(out_index, out_strides)}, out_index={out_index}, out_strides={out_strides}, out_shape={out_shape}")
-            out[index_to_position(out_index, out_strides)] = fn(in_storage[index_to_position(out_index, in_strides)])
-            print(f"Data position {i}, in_shape={in_shape}, out_shape={out_shape}, out_strides={out_strides}, in_strides={in_strides}, index_to_position={index_to_position(out_index, out_strides)}, out_index={out_index}")
+        for i in range(len(out)):
+            out_index = [None for _ in out_shape]
+            in_index = [None for _ in in_shape]
+            # Fills in out_index
+            to_index(i, out_shape, out_index)
+            # Fills in in_index
+            broadcast_index(out_index, out_shape, in_shape, in_index)
+            out[index_to_position(out_index, out_strides)] = fn(in_storage[index_to_position(in_index, in_strides)])
     return _map
 
 
