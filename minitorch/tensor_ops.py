@@ -47,7 +47,10 @@ def tensor_map(fn):
             to_index(i, out_shape, out_index)
             # Fills in in_index
             broadcast_index(out_index, out_shape, in_shape, in_index)
-            out[index_to_position(out_index, out_strides)] = fn(in_storage[index_to_position(in_index, in_strides)])
+            out[index_to_position(out_index, out_strides)] = fn(
+                in_storage[index_to_position(in_index, in_strides)]
+            )
+
     return _map
 
 
@@ -136,8 +139,21 @@ def tensor_zip(fn):
         b_shape,
         b_strides,
     ):
-        # TODO: Implement for Task 2.2.
-        raise NotImplementedError('Need to implement for Task 2.2')
+        for i in range(len(out)):
+            out_index = [None for _ in out_shape]
+            a_index = [None for _ in a_shape]
+            b_index = [None for _ in b_shape]
+            # Fills in out_index
+            to_index(i, out_shape, out_index)
+
+            # Fills in a_index and b_index
+            broadcast_index(out_index, out_shape, a_shape, a_index)
+            broadcast_index(out_index, out_shape, b_shape, b_index)
+
+            out[index_to_position(out_index, out_strides)] = fn(
+                a_storage[index_to_position(a_index, a_strides)],
+                b_storage[index_to_position(b_index, b_strides)],
+            )
 
     return _zip
 
@@ -207,8 +223,14 @@ def tensor_reduce(fn):
     """
 
     def _reduce(out, out_shape, out_strides, a_storage, a_shape, a_strides, reduce_dim):
-        # TODO: Implement for Task 2.2.
-        raise NotImplementedError('Need to implement for Task 2.2')
+        for i in range(a_storage.shape[0]):
+            a_index = [None for _ in out_shape]
+            to_index(i, a_shape, a_index)
+            out_index = [0 if i == reduce_dim else idx for i, idx in enumerate(a_index)]
+            out[index_to_position(out_index, out_strides)] = fn(
+                a_storage[index_to_position(a_index, a_strides)],
+                out[index_to_position(out_index, out_strides)],
+            )
 
     return _reduce
 

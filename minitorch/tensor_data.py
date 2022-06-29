@@ -75,7 +75,7 @@ def broadcast_index(big_index, big_shape, shape, out_index):
         )
     ):
         out_i = len(out_index) - i - 1
-        if shape_i == 0:
+        if shape_i == 1:
             out_index[out_i] = 0
         else:
             out_index[out_i] = big_index_i

@@ -276,13 +276,15 @@ class FunctionBase:
         """
         # Tip: Note when implementing this function that
         # cls.backward may return either a value or a tuple.
-        # TODO: Implement for Task 1.3.
+
         derivatives = cls.backward(ctx, d_output)
 
         if not isinstance(derivatives, tuple):
             derivatives = (derivatives,)
-        
-        assert len(inputs) == len(derivatives)
+
+        assert len(inputs) == len(
+            derivatives
+        ), f"{len(inputs)}, {len(derivatives)}, {cls}"
 
         return [
             (x, deriv) for x, deriv in zip(inputs, derivatives) if not is_constant(x)
