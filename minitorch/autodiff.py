@@ -282,14 +282,18 @@ class FunctionBase:
         if not isinstance(derivatives, tuple):
             derivatives = (derivatives,)
 
-        assert len(inputs) == len(
-            derivatives
-        ), f"{len(inputs)}, {len(derivatives)}, {cls}"
+        # Assumes that any items that require derivatives come first.
+        # Eg Axis arguments must come after variable arguments
+        assert len(inputs) >= len(derivatives)
+        assert all(not isinstance(d, Variable) for d in derivatives[len(inputs):])
+
+#        assert len(inputs) == len(
+#            derivatives
+#        ), f"{len(inputs)}, {len(derivatives)}, {cls}"
 
         return [
-            (x, deriv) for x, deriv in zip(inputs, derivatives) if not is_constant(x)
+            (x, x.expand(deriv)) for x, deriv in zip(inputs, derivatives) if not is_constant(x)
         ]
-
 
 # Algorithms for backpropagation
 
