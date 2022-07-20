@@ -192,7 +192,6 @@ class Tensor(Variable):
 
         # Case 1: Both the same shape.
         if self.shape == other.shape:
-            print("Case 1")
             return other
 
         # Case 2: Backward is a smaller than self. Broadcast up.
@@ -200,7 +199,6 @@ class Tensor(Variable):
         buf = self.zeros(true_shape)
         self.backend._id_map(other, out=buf)
         if self.shape == true_shape:
-            print("case 2")
             return buf
 
         # Case 3: Still different, reduce extra dims.
@@ -212,7 +210,6 @@ class Tensor(Variable):
 
         assert out.size == self.size, f"{out.shape} {self.shape}"
         # START CODE CHANGE (2021)
-        print("case 3")
         return Tensor.make(out._tensor._storage, self.shape, backend=self.backend)
         # END CODE CHANGE (2021)
 

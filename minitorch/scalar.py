@@ -229,7 +229,7 @@ class Sigmoid(ScalarFunction):
     @staticmethod
     def backward(ctx, d_output):
         a = ctx.saved_values
-        return d_output*operators.sigmoid(a) * (1.0 - operators.sigmoid(a))
+        return d_output * operators.sigmoid(a) * (1.0 - operators.sigmoid(a))
 
 
 class ReLU(ScalarFunction):
