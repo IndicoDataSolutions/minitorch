@@ -88,10 +88,13 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
         class Add(Function):
             @staticmethod
             def forward(ctx, t1, t2):
-                return add_zip(t1, t2)
+                result = add_zip(t1, t2)
+                print(t1, "+ ", t2, " = ", result)
+                return result
 
             @staticmethod
             def backward(ctx, grad_output):
+                print("Grads", grad_output)
                 return grad_output, grad_output
 
         class Mul(Function):
@@ -203,7 +206,8 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
         class Permute(Function):
             @staticmethod
             def forward(ctx, a, order):
-                return a.permute(*order)
+                tensor_data = a._tensor.permute(*order)
+                return Tensor.make(tensor_data._storage, tensor_data.shape, backend=a.backend)
 
             @staticmethod
             def backward(ctx, grad_output):
@@ -371,10 +375,10 @@ Received derivative %f for argument %d and index %s,
 but was expecting derivative %f from central difference.
 
 """
-
     for i, x in enumerate(vals):
         ind = x._tensor.sample()
         check = grad_central_difference(f, *vals, arg=i, ind=ind)
+        print("val", x, "autodiff grad", x.grad, "ind", ind, "central_difference", check)
         np.testing.assert_allclose(
             x.grad[ind],
             check,
