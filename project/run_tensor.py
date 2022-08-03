@@ -22,8 +22,8 @@ class Network(minitorch.Module):
 
     def forward(self, x):
         # ASSIGN2.5
-        h = self.layer1.forward(x).relu()
-        h = self.layer2.forward(h).relu()
+        h = self.layer1.forward(x)#.relu()
+        h = self.layer2.forward(h)#.relu()
         return self.layer3.forward(h).sigmoid()
         # END ASSIGN2.5
 
@@ -82,6 +82,8 @@ class TensorTrain:
 
             loss = -prob.log()
             (loss / data.N).sum().view(1).backward()
+#            for param in self.model.parameters():
+#                print(param.value.derivative)
             total_loss = loss.sum().view(1)[0]
             losses.append(total_loss)
 
@@ -94,9 +96,8 @@ class TensorTrain:
                 correct = int(((out.get_data() > 0.5) == y2).sum()[0])
                 log_fn(epoch, total_loss, correct, losses)
 
-
 if __name__ == "__main__":
-    PTS = 50
+    PTS = 5
     HIDDEN = 2
     RATE = 0.5
     data = minitorch.datasets["Simple"](PTS)
