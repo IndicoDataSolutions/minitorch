@@ -4,7 +4,7 @@ Be sure you have minitorch installed in you Virtual Env.
 """
 
 import minitorch
-
+from pprint import pprint
 
 def RParam(*shape):
     r = 2 * (minitorch.rand(shape) - 0.5)
@@ -16,15 +16,17 @@ class Network(minitorch.Module):
         super().__init__()
 
         # Submodules
-        self.layer1 = Linear(2, hidden_layers)
-        self.layer2 = Linear(hidden_layers, hidden_layers)
-        self.layer3 = Linear(hidden_layers, 1)
+        # self.layer1 = Linear(2, hidden_layers)
+        # self.layer2 = Linear(hidden_layers, hidden_layers)
+        # self.layer3 = Linear(2, 1)
+        self.just_numbers = minitorch.Parameter(minitorch.rand((25,))) 
 
     def forward(self, x):
         # ASSIGN2.5
-        h = self.layer1.forward(x)#.relu()
-        h = self.layer2.forward(h)#.relu()
-        return self.layer3.forward(h).sigmoid()
+        # h = self.layer1.forward(x)#.relu()
+        # h = self.layer2.forward(h)#.relu()
+        # return self.layer3.forward(x).sigmoid()
+        return (self.just_numbers.value * minitorch.tensor(1.0)).sigmoid()
         # END ASSIGN2.5
 
 
@@ -32,7 +34,7 @@ class Linear(minitorch.Module):
     def __init__(self, in_size, out_size):
         super().__init__()
         self.weights = RParam(in_size, out_size)
-        self.bias = RParam(out_size)
+#        self.bias = RParam(out_size)
         self.out_size = out_size
 
     def forward(self, x):
@@ -41,7 +43,7 @@ class Linear(minitorch.Module):
         return (
             self.weights.value.view(1, in_size, self.out_size)
             * x.view(batch, in_size, 1)
-        ).sum(1).view(batch, self.out_size) + self.bias.value.view(self.out_size)
+        ).sum(1).view(batch, self.out_size)# + self.bias.value.view(self.out_size)
         # END ASSIGN2.5
 
 
@@ -78,12 +80,18 @@ class TensorTrain:
 
             # Forward
             out = self.model.forward(X).view(data.N)
-            prob = (out * y) + (out - 1.0) * (y - 1.0)
-
+            prob = (out * y) + ( - out + 1.0) * (- y + 1.0)
+            pprint(list(zip(out.to_numpy().tolist(), y.to_numpy().tolist(), prob.to_numpy().tolist())))
             loss = -prob.log()
-            (loss / data.N).sum().view(1).backward()
-#            for param in self.model.parameters():
-#                print(param.value.derivative)
+            tot_loss = (loss / data.N).sum().view(1)
+            print("Total loss", tot_loss, type(tot_loss))
+            tot_loss.backward()
+            for param in self.model.parameters():
+                if (param.value.derivative.to_numpy() > 0).any():
+                    print("Epoch", epoch, param.value.derivative.to_numpy())
+                    raise AssertionError()
+                print(f"Value: {param.value.to_numpy()},\n Grad:{param.value.derivative.to_numpy()}\n")
+            print("-" * 50)
             total_loss = loss.sum().view(1)[0]
             losses.append(total_loss)
 
@@ -97,8 +105,9 @@ class TensorTrain:
                 log_fn(epoch, total_loss, correct, losses)
 
 if __name__ == "__main__":
-    PTS = 5
+    PTS = 25
     HIDDEN = 2
     RATE = 0.5
-    data = minitorch.datasets["Simple"](PTS)
+    data = minitorch.datasets["Diag"](PTS)
+    print(data)
     TensorTrain(HIDDEN).train(data, RATE)
