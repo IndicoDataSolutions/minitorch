@@ -2,7 +2,7 @@ from minitorch import grad_check, tensor
 import pytest
 from hypothesis import given
 from hypothesis.strategies import lists, data, permutations
-from .strategies import tensors, shaped_tensors, assert_close, small_floats
+from .strategies import tensors, shaped_tensors, assert_close, small_floats, floats
 from minitorch import MathTestVariable
 
 one_arg, two_arg, red_arg = MathTestVariable._tests()
@@ -88,6 +88,23 @@ def test_two_grad(fn, ts):
     t1, t2 = ts
     grad_check(tensor_fn, t1, t2)
 
+
+EPS = 1e-6
+
+def loss_fn_for_test(a, b):
+    return - ((a * b) + ( - a + 1.0) * (- b + 1.0)).log()
+
+@given(
+    shaped_tensors(
+        2,
+        numbers=floats(allow_nan=False, min_value=0 + 5 * EPS, max_value=1 - 5 * EPS),
+    )
+)
+@pytest.mark.parametrize("fn", two_arg)
+def test_loss_grad(fn, ts):
+    t1, t2 = ts
+    grad_check(loss_fn_for_test, t1, t2)
+    
 
 @given(shaped_tensors(2))
 @pytest.mark.task2_4

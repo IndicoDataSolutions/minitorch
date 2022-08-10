@@ -92,7 +92,7 @@ EPS = 1e-6
 
 def log(x):
     ":math:`f(x) = log(x)`"
-    return math.log(x + EPS)
+    return math.log(x)
 
 
 def exp(x):
@@ -103,13 +103,13 @@ def exp(x):
 def log_back(x, d):
     r"If :math:`f = log` as above, compute d :math:`d \times f'(x)`"
     # TODO: Implement for Task 0.1.
-    return d * 1.0 / (x + EPS)
+    return d * 1.0 / (x)
 
 
 def inv(x):
     ":math:`f(x) = 1/x`"
     # TODO: Implement for Task 0.1.
-    return 1 / (x)# + EPS)
+    return 1 / (x)
 
 
 def inv_back(x, d):

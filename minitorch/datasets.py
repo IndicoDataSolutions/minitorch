@@ -6,8 +6,8 @@ import math
 def make_pts(N):
     X = []
     for i in range(N):
-        x_1 = 0.5 * random.random()
-        x_2 = 0.5 * random.random()
+        x_1 = random.random() - 0.5
+        x_2 = random.random() - 0.5
         X.append((x_1, x_2))
     return X
 
@@ -32,7 +32,7 @@ def diag(N):
     X = make_pts(N)
     y = []
     for x_1, x_2 in X:
-        y1 = 1 if x_1 + x_2 < 0.5 else 0
+        y1 = 1 if (x_1 + x_2) < 0 else 0
         y.append(y1)
     return Graph(N, X, y)
 
