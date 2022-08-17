@@ -32,7 +32,7 @@ def diag(N):
     X = make_pts(N)
     y = []
     for x_1, x_2 in X:
-        y1 = 1 if (x_1 + x_2) < 0 else 0
+        y1 = 0 if (x_1 + x_2) < 0 else 1
         y.append(y1)
     return Graph(N, X, y)
 
