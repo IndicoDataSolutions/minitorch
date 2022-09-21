@@ -61,6 +61,7 @@ class GraphBuilder:
                 continue
             else:
                 op = "%s (Op %d)" % (cur.history.last_fn.__name__, self.op_id)
+                print(op)
                 G.add_node(op, shape="square", penwidth=3)
                 G.add_edge(op, self.get_name(cur))
                 self.op_id += 1

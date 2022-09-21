@@ -320,22 +320,32 @@ def topological_sort(variable):
         list of Variables : Non-constant Variables in topological order
                             starting from the right.
     """
+    
+    # TODO: re-write me
+    # Notes: always process the node / variables that have no remaining downstream variables
+    # Update count of downstream variables after accumulating gradients
+    # Sort frontier by number of downstream variables so that you can pop from the front
+    
+    # sorted_vars = []
+    # seen = set([variable.name])
+    # frontier = [variable]
 
-    sorted_vars = []
-    to_be_visited = set([variable.name])
-    frontier = [variable]
+    # while frontier:
+    #     v = frontier.pop(0)
+    #     seen.add(v.name)
 
-    while frontier:
-        v = frontier.pop(0)
-        sorted_vars.append(v)
-        if not v.history.inputs:
-            continue
-        for input_var in v.history.inputs:
-            if is_constant(input_var):
-                continue
-            if input_var.name not in to_be_visited:
-                to_be_visited.add(input_var.name)
-                frontier.append(input_var)
+    #     print("Visiting", v.name)
+    #     sorted_vars.append(v)
+    #     if not v.history.inputs:
+    #         continue
+    #     for input_var in v.history.inputs:
+    #         if is_constant(input_var):
+    #             continue
+    #         if input_var.name not in seen:
+    #             frontier.append(input_var)
+    #         else:
+    #             sorted_vars.remove(input_var)
+    #             frontier.append(input_var)
 
     return sorted_vars
 

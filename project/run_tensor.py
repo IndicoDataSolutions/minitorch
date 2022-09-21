@@ -4,6 +4,9 @@ Be sure you have minitorch installed in you Virtual Env.
 """
 
 import minitorch
+from graph_builder import GraphBuilder
+
+import networkx as nx
 from pprint import pprint
 
 def RParam(*shape, name=None):
@@ -26,7 +29,11 @@ class Network(minitorch.Module):
         # ASSIGN2.5
         # h = self.layer1.forward(x)#.relu()
         #h = self.layer2.forward(h)#.relu()
-        return self.layer3.forward(x).sigmoid()
+        layer3_out = self.layer3.forward(x)
+        layer3_out.name = "layer_3"
+        sigmoid_out = layer3_out.sigmoid()
+        sigmoid_out.name = "sigmoid_out"
+        return sigmoid_out
 
 
 class Linear(minitorch.Module):
@@ -39,10 +46,21 @@ class Linear(minitorch.Module):
     def forward(self, x):
         # ASSIGN2.5
         batch, in_size = x.shape
-        return (
-            self.weights.value.view(1, in_size, self.out_size)
-            * x.view(batch, in_size, 1)
-        ).sum(1).view(batch, self.out_size) + self.bias.value.view(self.out_size)
+        weights_view = self.weights.value.view(1, in_size, self.out_size)
+        weights_view.name = "weights_view"
+        x_view = x.view(batch, in_size, 1)
+        x_view.name = "x_view"
+        Wx = weights_view * x_view 
+        Wx.name = "Wx"
+        sum_Wx = Wx.sum(1)
+        sum_Wx.name = "sum_Wx"
+        sum_Wx_view = sum_Wx.view(batch, self.out_size)
+        sum_Wx_view.name = "sum_Wx_view"
+        bias_view = self.bias.value.view(self.out_size)
+        bias_view.name = "bias_view"
+        layer_out = sum_Wx_view + bias_view
+        layer_out.name = "layer_out"
+        return layer_out
         # END ASSIGN2.5
 
 
@@ -61,7 +79,7 @@ class TensorTrain:
     def run_many(self, X):
         return self.model.forward(minitorch.tensor(X))
 
-    def train(self, data, learning_rate, max_epochs=500, log_fn=default_log_fn):
+    def train(self, data, learning_rate, max_epochs=500, log_fn=default_log_fn, visualize=False):
 
         self.learning_rate = learning_rate
         self.max_epochs = max_epochs
@@ -70,6 +88,8 @@ class TensorTrain:
 
         X = minitorch.tensor(data.X)
         y = minitorch.tensor(data.y)
+        X.name = "X"
+        y.name = "y"
 
         losses = []
         for epoch in range(1, self.max_epochs + 1):
@@ -79,14 +99,31 @@ class TensorTrain:
 
             # Forward
             out = self.model.forward(X).view(data.N)
-            prob = (out * y) + ( - out + 1.0) * (- y + 1.0)
+            out.name = "out"
+            prob = (out * y)  + ( - out + 1.0) * (- y + 1.0)
+            prob.name = "prob"
+
+            
 #            pprint(list(zip(out.to_numpy().tolist(), y.to_numpy().tolist(), prob.to_numpy().tolist())))
             loss = -prob.log()
-            l2_pen = (self.model.layer3.weights.value * self.model.layer3.weights.value).sum()
-            print(f"Loss = {loss.sum().view(1)} l2 = {l2_pen}")
-            tot_loss = (loss / data.N).sum().view(1) + 0.000001 * l2_pen.view(1)
+            loss.name = "loss"
+            # l2_pen = (self.model.layer3.weights.value * self.model.layer3.weights.value).sum()
+            # print(f"Loss = {loss.sum().view(1)} l2 = {l2_pen}")
+            tot_loss = (loss / data.N).sum().view(1) # + 0.000001 * l2_pen.view(1)
+            tot_loss.name = "tot_loss"
+            graph_builder = GraphBuilder()
+            G = graph_builder.run(tot_loss)
+            output_graphviz_svg = nx.nx_pydot.to_pydot(G).create_svg()
+            with open('graph.svg', 'wb') as fd:
+                fd.write(output_graphviz_svg)
+ 
+            
+
+
 #            print("Total loss", tot_loss, type(tot_loss))
             tot_loss.backward()
+            import ipdb; ipdb.set_trace()
+            
             if True:
                 for param in self.model.parameters():
                     #if (param.value.derivative.to_numpy() > 0).any():
@@ -112,4 +149,4 @@ if __name__ == "__main__":
     RATE = 0.005
     data = minitorch.datasets["Diag"](PTS)
     print(data)
-    TensorTrain(HIDDEN).train(data, RATE, max_epochs=100000)
+    TensorTrain(HIDDEN).train(data, RATE, max_epochs=100000, visualize=True)
