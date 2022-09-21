@@ -207,7 +207,6 @@ class Tensor(Variable):
         for dim, shape in enumerate(out.shape):
             if orig_shape[dim] == 1 and shape != 1:
                 out = self.backend._add_reduce(out, dim)
-
         assert out.size == self.size, f"{out.shape} {self.shape}"
         # START CODE CHANGE (2021)
         return Tensor.make(out._tensor._storage, self.shape, backend=self.backend)

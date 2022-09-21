@@ -77,6 +77,7 @@ class Variable:
         # assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self._derivative is None:
             self._derivative = self.zeros()
+        print("Called accumulate derivative for {}".format(self.name))
         self._derivative += val
 
     def zero_derivative_(self):  # pragma: no cover
@@ -257,7 +258,9 @@ class FunctionBase:
         back = None
         if need_grad:
             back = History(cls, ctx, vals)
-        return cls.variable(cls.data(c), back)
+        output = cls.variable(cls.data(c), back)
+#        print(cls.__name__, [getattr(n, "name", None) for n in vals], output.name)
+        return output
 
     @classmethod
     def chain_rule(cls, ctx, inputs, d_output):
@@ -278,6 +281,10 @@ class FunctionBase:
         # cls.backward may return either a value or a tuple.
 
         derivatives = cls.backward(ctx, d_output)
+#        print("Backwards out", cls.__name__, [getattr(inp, "name", None) for inp in inputs])
+#        print("Output", d_output)
+#        print("Grads", derivatives)
+#        print("+==" * 100)
 
         if not isinstance(derivatives, tuple):
             derivatives = (derivatives,)

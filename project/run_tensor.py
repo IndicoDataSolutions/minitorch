@@ -6,9 +6,11 @@ Be sure you have minitorch installed in you Virtual Env.
 import minitorch
 from pprint import pprint
 
-def RParam(*shape):
+def RParam(*shape, name=None):
     r = 2 * (minitorch.rand(shape) - 0.5)
-    return minitorch.Parameter(r)
+    if len(shape) == 1:
+        r = minitorch.rand(shape) + 0.1
+    return minitorch.Parameter(r, name=name)
 
 
 class Network(minitorch.Module):
@@ -30,8 +32,8 @@ class Network(minitorch.Module):
 class Linear(minitorch.Module):
     def __init__(self, in_size, out_size):
         super().__init__()
-        self.weights = RParam(in_size, out_size)
-        self.bias = RParam(out_size)
+        self.weights = RParam(in_size, out_size, name="weight")
+        self.bias = RParam(out_size, name="bias")
         self.out_size = out_size
 
     def forward(self, x):
