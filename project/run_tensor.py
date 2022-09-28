@@ -113,16 +113,12 @@ class TensorTrain:
             tot_loss.name = "tot_loss"
             graph_builder = GraphBuilder()
             G = graph_builder.run(tot_loss)
-            output_graphviz_svg = nx.nx_pydot.to_pydot(G).create_svg()
-            with open('graph.svg', 'wb') as fd:
-                fd.write(output_graphviz_svg)
+#            output_graphviz_svg = nx.nx_pydot.to_pydot(G).create_svg()
+#            with open('graph.svg', 'wb') as fd:
+#                fd.write(output_graphviz_svg)
  
-            
-
-
-#            print("Total loss", tot_loss, type(tot_loss))
+            print("Total loss", tot_loss, type(tot_loss))
             tot_loss.backward()
-            import ipdb; ipdb.set_trace()
             
             if True:
                 for param in self.model.parameters():

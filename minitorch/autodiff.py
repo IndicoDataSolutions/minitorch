@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 variable_count = 1
 
 
@@ -304,11 +306,35 @@ class FunctionBase:
 
 # Algorithms for backpropagation
 
-
 def is_constant(val):
     return not isinstance(val, Variable) or val.history is None
 
+def create_index(variable, index, name_lookup):
+    if variable.name in name_lookup:
+        assert variable is name_lookup[variable.name]
+    name_lookup[variable.name] = variable
+    if is_constant(variable) or variable.history.inputs is None:
+        return
 
+    for inp in variable.history.inputs:
+        if not isinstance(inp, Variable):
+            continue
+#        if is_constant(inp) or is_constant(variable):
+#            continue
+        index[inp.name].add(variable.name)
+        create_index(inp, index, name_lookup)
+
+def pop_from_index(variable_name, index, name_lookup):
+    del index[variable_name]
+    variable = name_lookup[variable_name]
+    if is_constant(variable):
+        return
+    for to_pop in variable.history.inputs or []:
+        if isinstance(to_pop, Variable):
+            to_pop_idx = index[to_pop.name]
+            if variable_name in to_pop_idx:
+                to_pop_idx.remove(variable_name)
+        
 def topological_sort(variable):
     """
     Computes the topological order of the computation graph.
@@ -320,34 +346,21 @@ def topological_sort(variable):
         list of Variables : Non-constant Variables in topological order
                             starting from the right.
     """
+    index = defaultdict(set)
+    name_lookup = dict()
+    create_index(variable, index, name_lookup)
+    index = dict(index)
+    index[variable.name] = set()
     
-    # TODO: re-write me
-    # Notes: always process the node / variables that have no remaining downstream variables
-    # Update count of downstream variables after accumulating gradients
-    # Sort frontier by number of downstream variables so that you can pop from the front
-    
-    # sorted_vars = []
-    # seen = set([variable.name])
-    # frontier = [variable]
-
-    # while frontier:
-    #     v = frontier.pop(0)
-    #     seen.add(v.name)
-
-    #     print("Visiting", v.name)
-    #     sorted_vars.append(v)
-    #     if not v.history.inputs:
-    #         continue
-    #     for input_var in v.history.inputs:
-    #         if is_constant(input_var):
-    #             continue
-    #         if input_var.name not in seen:
-    #             frontier.append(input_var)
-    #         else:
-    #             sorted_vars.remove(input_var)
-    #             frontier.append(input_var)
-
-    return sorted_vars
+    output = []
+    while index:
+        for var_name, inputs in index.items():
+            if len(inputs) == 0:
+                output.append(name_lookup[var_name])
+                pop_from_index(var_name, index, name_lookup)
+                break
+    print([o.name for o in output])
+    return output
 
 
 def backpropagate(variable, deriv):
@@ -379,7 +392,7 @@ def backpropagate(variable, deriv):
     assert sorted_vars[0] == variable
 
     for var in sorted_vars:
-        if var.history.inputs is None:
+        if var.history is None or var.history.inputs is None:
             continue
 
         # Find the derivative contribution of this variable
