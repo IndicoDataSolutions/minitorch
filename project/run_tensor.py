@@ -2,7 +2,9 @@
 Be sure you have minitorch installed in you Virtual Env.
 >>> pip install -Ue .
 """
+import uuid
 
+from matplotlib import pyplot as plt
 import minitorch
 from graph_builder import GraphBuilder
 
@@ -21,15 +23,15 @@ class Network(minitorch.Module):
         super().__init__()
 
         # Submodules
-        # self.layer1 = Linear(2, hidden_layers)
-        # self.layer2 = Linear(hidden_layers, hidden_layers)
-        self.layer3 = Linear(2, 1)
+        self.layer1 = Linear(2, hidden_layers, name="layer1")
+        self.layer2 = Linear(hidden_layers, hidden_layers, name="layer2")
+        self.layer3 = Linear(2, 1, name="layer3")
 
     def forward(self, x):
         # ASSIGN2.5
-        # h = self.layer1.forward(x)#.relu()
-        #h = self.layer2.forward(h)#.relu()
-        layer3_out = self.layer3.forward(x)
+        h = self.layer1.forward(x).relu()
+        h = self.layer2.forward(h).relu()
+        layer3_out = self.layer3.forward(h)
         layer3_out.name = "layer_3"
         sigmoid_out = layer3_out.sigmoid()
         sigmoid_out.name = "sigmoid_out"
@@ -37,36 +39,41 @@ class Network(minitorch.Module):
 
 
 class Linear(minitorch.Module):
-    def __init__(self, in_size, out_size):
+    def __init__(self, in_size, out_size, name=None):
         super().__init__()
-        self.weights = RParam(in_size, out_size, name="weight")
-        self.bias = RParam(out_size, name="bias")
+        self.name = name or uuid.uuid4().hex()
+        self.weights = RParam(in_size, out_size, name=f"{self.name}_weight")
+        self.bias = RParam(out_size, name=f"{self.name}_bias")
         self.out_size = out_size
 
     def forward(self, x):
         # ASSIGN2.5
         batch, in_size = x.shape
         weights_view = self.weights.value.view(1, in_size, self.out_size)
-        weights_view.name = "weights_view"
+        weights_view.name = f"{self.name}_weights_view"
         x_view = x.view(batch, in_size, 1)
-        x_view.name = "x_view"
+        x_view.name = f"{self.name}_x_view"
         Wx = weights_view * x_view 
-        Wx.name = "Wx"
+        Wx.name = f"{self.name}_Wx"
         sum_Wx = Wx.sum(1)
-        sum_Wx.name = "sum_Wx"
+        sum_Wx.name = f"{self.name}_sum_Wx"
         sum_Wx_view = sum_Wx.view(batch, self.out_size)
-        sum_Wx_view.name = "sum_Wx_view"
+        sum_Wx_view.name = f"{self.name}_sum_Wx_view"
         bias_view = self.bias.value.view(self.out_size)
-        bias_view.name = "bias_view"
+        bias_view.name = f"{self.name}_bias_view"
         layer_out = sum_Wx_view + bias_view
-        layer_out.name = "layer_out"
+        layer_out.name = f"{self.name}_layer_out"
         return layer_out
         # END ASSIGN2.5
 
 
 def default_log_fn(epoch, total_loss, correct, losses):
     print("Epoch ", epoch, " loss ", total_loss, "correct", correct)
-
+    if epoch % 100 == 0:
+        epochs = list(range(len(losses)))
+        plt.plot(epochs, losses)
+        plt.savefig("loss.png")
+        plt.clf()
 
 class TensorTrain:
     def __init__(self, hidden_layers):
@@ -100,7 +107,11 @@ class TensorTrain:
             # Forward
             out = self.model.forward(X).view(data.N)
             out.name = "out"
-            prob = (out * y)  + ( - out + 1.0) * (- y + 1.0)
+            first_prob_component = out * y
+            first_prob_component.name = "first_prob_component"
+            second_prob_component = ( - out + 1.0) * (- y + 1.0)
+            second_prob_component.name = "second_prob_component"
+            prob = first_prob_component + second_prob_component
             prob.name = "prob"
 
             
@@ -111,12 +122,13 @@ class TensorTrain:
             # print(f"Loss = {loss.sum().view(1)} l2 = {l2_pen}")
             tot_loss = (loss / data.N).sum().view(1) # + 0.000001 * l2_pen.view(1)
             tot_loss.name = "tot_loss"
-            graph_builder = GraphBuilder()
-            G = graph_builder.run(tot_loss)
-#            output_graphviz_svg = nx.nx_pydot.to_pydot(G).create_svg()
-#            with open('graph.svg', 'wb') as fd:
-#                fd.write(output_graphviz_svg)
- 
+            # graph_builder = GraphBuilder()
+            # G = graph_builder.run(tot_loss)
+            # output_graphviz_svg = nx.nx_pydot.to_pydot(G).create_svg()
+            # with open('graph.svg', 'wb') as fd:
+            #    fd.write(output_graphviz_svg)
+
+            # import ipdb; ipdb.set_trace()
             print("Total loss", tot_loss, type(tot_loss))
             tot_loss.backward()
             
@@ -127,7 +139,7 @@ class TensorTrain:
                     #                    raise AssertionError()
                     print(f"Value: {param.value.to_numpy()},\n Grad:{param.value.derivative.to_numpy()}\n")
                 print("-" * 50)
-            total_loss = loss.sum().view(1)[0]
+            total_loss = loss.sum().view(1)[0] / data.N
             losses.append(total_loss)
 
             # Update
@@ -142,7 +154,8 @@ class TensorTrain:
 if __name__ == "__main__":
     PTS = 50
     HIDDEN = 2
-    RATE = 0.005
+    RATE = 0.1
+    
     data = minitorch.datasets["Diag"](PTS)
     print(data)
     TensorTrain(HIDDEN).train(data, RATE, max_epochs=100000, visualize=True)

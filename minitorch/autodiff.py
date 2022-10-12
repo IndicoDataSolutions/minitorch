@@ -79,7 +79,7 @@ class Variable:
         # assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self._derivative is None:
             self._derivative = self.zeros()
-        print("Called accumulate derivative for {}".format(self.name))
+        # print("Called accumulate derivative for {}".format(self.name))
         self._derivative += val
 
     def zero_derivative_(self):  # pragma: no cover
@@ -359,7 +359,6 @@ def topological_sort(variable):
                 output.append(name_lookup[var_name])
                 pop_from_index(var_name, index, name_lookup)
                 break
-    print([o.name for o in output])
     return output
 
 

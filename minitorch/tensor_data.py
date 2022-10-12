@@ -2,6 +2,7 @@ import random
 from .operators import prod
 from numpy import array, float64, ndarray
 import numba
+from numba import njit
 import itertools
 
 MAX_DIMS = 32
@@ -104,13 +105,14 @@ def shape_broadcast(shape1, shape2):
     return tuple(output_shape)
 
 
+@njit
 def strides_from_shape(shape):
     layout = [1]
     offset = 1
-    for s in reversed(shape):
+    for s in shape[::-1]:
         layout.append(s * offset)
         offset = s * offset
-    return tuple(reversed(layout[:-1]))
+    return layout[:-1][::-1]
 
 
 class TensorData:
