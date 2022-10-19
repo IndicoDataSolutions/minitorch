@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 variable_count = 1
 
 
@@ -77,6 +79,7 @@ class Variable:
         # assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self._derivative is None:
             self._derivative = self.zeros()
+        # print("Called accumulate derivative for {}".format(self.name))
         self._derivative += val
 
     def zero_derivative_(self):  # pragma: no cover
@@ -257,7 +260,9 @@ class FunctionBase:
         back = None
         if need_grad:
             back = History(cls, ctx, vals)
-        return cls.variable(cls.data(c), back)
+        output = cls.variable(cls.data(c), back)
+#        print(cls.__name__, [getattr(n, "name", None) for n in vals], output.name)
+        return output
 
     @classmethod
     def chain_rule(cls, ctx, inputs, d_output):
@@ -278,6 +283,10 @@ class FunctionBase:
         # cls.backward may return either a value or a tuple.
 
         derivatives = cls.backward(ctx, d_output)
+#        print("Backwards out", cls.__name__, [getattr(inp, "name", None) for inp in inputs])
+#        print("Output", d_output)
+#        print("Grads", derivatives)
+#        print("+==" * 100)
 
         if not isinstance(derivatives, tuple):
             derivatives = (derivatives,)
@@ -297,11 +306,35 @@ class FunctionBase:
 
 # Algorithms for backpropagation
 
-
 def is_constant(val):
     return not isinstance(val, Variable) or val.history is None
 
+def create_index(variable, index, name_lookup):
+    if variable.name in name_lookup:
+        assert variable is name_lookup[variable.name]
+    name_lookup[variable.name] = variable
+    if is_constant(variable) or variable.history.inputs is None:
+        return
 
+    for inp in variable.history.inputs:
+        if not isinstance(inp, Variable):
+            continue
+#        if is_constant(inp) or is_constant(variable):
+#            continue
+        index[inp.name].add(variable.name)
+        create_index(inp, index, name_lookup)
+
+def pop_from_index(variable_name, index, name_lookup):
+    del index[variable_name]
+    variable = name_lookup[variable_name]
+    if is_constant(variable):
+        return
+    for to_pop in variable.history.inputs or []:
+        if isinstance(to_pop, Variable):
+            to_pop_idx = index[to_pop.name]
+            if variable_name in to_pop_idx:
+                to_pop_idx.remove(variable_name)
+        
 def topological_sort(variable):
     """
     Computes the topological order of the computation graph.
@@ -313,24 +346,20 @@ def topological_sort(variable):
         list of Variables : Non-constant Variables in topological order
                             starting from the right.
     """
-
-    sorted_vars = []
-    to_be_visited = set([variable.name])
-    frontier = [variable]
-
-    while frontier:
-        v = frontier.pop(0)
-        sorted_vars.append(v)
-        if not v.history.inputs:
-            continue
-        for input_var in v.history.inputs:
-            if is_constant(input_var):
-                continue
-            if input_var.name not in to_be_visited:
-                to_be_visited.add(input_var.name)
-                frontier.append(input_var)
-
-    return sorted_vars
+    index = defaultdict(set)
+    name_lookup = dict()
+    create_index(variable, index, name_lookup)
+    index = dict(index)
+    index[variable.name] = set()
+    
+    output = []
+    while index:
+        for var_name, inputs in index.items():
+            if len(inputs) == 0:
+                output.append(name_lookup[var_name])
+                pop_from_index(var_name, index, name_lookup)
+                break
+    return output
 
 
 def backpropagate(variable, deriv):
@@ -362,7 +391,7 @@ def backpropagate(variable, deriv):
     assert sorted_vars[0] == variable
 
     for var in sorted_vars:
-        if var.history.inputs is None:
+        if var.history is None or var.history.inputs is None:
             continue
 
         # Find the derivative contribution of this variable
