@@ -45,8 +45,8 @@ def tensor_map(fn):
     def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
         # TODO: Implement for Task 3.1.
         for i in range(len(out)):
-            out_index = [None for _ in out_shape]
-            in_index = [None for _ in in_shape]
+            out_index = [-1 for _ in out_shape]
+            in_index = [-1 for _ in in_shape]
             # Fills in out_index
             to_index(i, out_shape, out_index)
             # Fills in in_index
@@ -127,9 +127,9 @@ def tensor_zip(fn):
         b_strides,
     ):
         for i in range(len(out)):
-            out_index = [None for _ in out_shape]
-            a_index = [None for _ in a_shape]
-            b_index = [None for _ in b_shape]
+            out_index = [-1 for _ in out_shape]
+            a_index = [-1 for _ in a_shape]
+            b_index = [-1 for _ in b_shape]
             # Fills in out_index
             to_index(i, out_shape, out_index)
 
@@ -198,7 +198,7 @@ def tensor_reduce(fn):
 
     def _reduce(out, out_shape, out_strides, a_storage, a_shape, a_strides, reduce_dim):
         for i in range(a_storage.shape[0]):
-            a_index = [None for _ in out_shape]
+            a_index = [-1 for _ in out_shape]
             to_index(i, a_shape, a_index)
             out_index = [0 if i == reduce_dim else idx for i, idx in enumerate(a_index)]
             out[index_to_position(out_index, out_strides)] = fn(
@@ -285,9 +285,55 @@ def tensor_matrix_multiply(
     """
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
+    # index_to_position(out_index, out_strides)
+    for i in range(out.shape[0]):
+        out[i] = 0 # Possibly unnecessary
+        
+        out_index = [-1 for _ in out_shape]
+        to_index(i, out_shape, out_index)
+        
+        for a_idx in range(a_shape[-1]):
+            a_index_ideal = [*out_index[:-2], out_index[-2], a_idx]
+            a_index_broadcast = [-1 for _ in a_shape]
+
+            a_shape_ideal = list(out_shape)
+            a_shape_ideal[-2] = a_shape[-2]
+            a_shape_ideal[-1] = a_shape[-1]
+            broadcast_index(a_index_ideal, a_shape_ideal, a_shape, a_index_broadcast)
+
+            b_index_ideal = [*out_index[:-2], a_idx, out_index[-1]]
+            # TODO: repeat broadcasting madness for b
+            
+            out[i] += a[index_to_position(a_index, a_strides)] * b[*out_index[:-2], a_idx, out_index[-1]]
 
     # TODO: Implement for Task 3.2.
     raise NotImplementedError('Need to implement for Task 3.2')
+
+#
+#   [a, b]
+#   [c, d]
+#   [e, f]
+    
+#   [g, h]
+#   [i, j]
+
+#   [k, l]
+#   [m, n]
+#   [o, p]
+
+# = [a * g + b * i, a * h + b * j]
+#   [c * g + d * i, c * h + d * j]
+#   [e * g + g * i, e * h + f * j]
+
+
+shape =        [1, 5]
+big_shape = [6, 5, 5]
+
+index = [5, 4, 1]
+
+out_index = [0, 1]
+
+
 
 
 def matrix_multiply(a, b):

@@ -12,6 +12,13 @@ class IndexingError(RuntimeError):
     "Exception raised for indexing errors."
     pass
 
+@njit
+def jit_sum(vals):
+    output = 0
+    for val in vals:
+        output += val
+    return output
+
 
 def index_to_position(index, strides):
     """
@@ -24,9 +31,8 @@ def index_to_position(index, strides):
 
     Returns:
         int : position in storage
-    """
-
-    return sum([i * s for i, s in zip(index, strides)])
+    """    
+    return jit_sum([i * s for i, s in zip(index, strides)])
 
 
 def to_index(ordinal, shape, out_index):
@@ -46,7 +52,7 @@ def to_index(ordinal, shape, out_index):
 
     """
     # NOTE: does not function unless default strides
-    strides = strides_from_shape(shape)
+    strides = _strides_from_shape(shape)
     for i, s in enumerate(strides):
         out_index[i] = ordinal // s
         ordinal = ordinal % s
@@ -70,9 +76,9 @@ def broadcast_index(big_index, big_shape, shape, out_index):
     """
     for i, (big_index_i, big_shape_i, shape_i) in enumerate(
         zip(
-            reversed(big_index),
-            reversed(big_shape),
-            reversed(shape),
+            big_index[::-1],
+            big_shape[::-1],
+            shape[::-1],
         )
     ):
         out_i = len(out_index) - i - 1
@@ -96,7 +102,7 @@ def shape_broadcast(shape1, shape2):
         IndexingError : if cannot broadcast
     """
     output_shape = []
-    for pair in itertools.zip_longest(reversed(shape1), reversed(shape2), fillvalue=1):
+    for pair in itertools.zip_longest(shape1[::-1], shape2[::-1], fillvalue=1):
         if min(pair) != 1 and pair[0] != pair[1]:
             raise IndexingError(f"Cannot broadcast tensor of {shape1} with tensor of {shape2}")
 
@@ -106,13 +112,17 @@ def shape_broadcast(shape1, shape2):
 
 
 @njit
-def strides_from_shape(shape):
+def _strides_from_shape(shape):
     layout = [1]
     offset = 1
     for s in shape[::-1]:
         layout.append(s * offset)
         offset = s * offset
     return layout[:-1][::-1]
+
+
+def strides_from_shape(shape):
+    return tuple(_strides_from_shape(shape))
 
 
 class TensorData:
