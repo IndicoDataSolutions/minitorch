@@ -290,33 +290,34 @@ def tensor_matrix_multiply(
         out[i] = 0 # Possibly unnecessary
         
         out_index = [-1 for _ in out_shape]
+
+        # TODO: inline this 
         to_index(i, out_shape, out_index)
-#        a_offset = sum(i * s for i, s in zip(out_index[-3::-1], a_strides[-3::-1]))
-        
+
+        # a_position = a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * out_index[-1]
+        a_offset = 0
+        for big_index_i, shape_i, stride_i in zip(
+                out_index[-3::-1],
+                a_shape[-3::-1],
+                a_stride[-3::-1],
+        ):
+            if shape_i != 1:
+                a_offset += stride_i * big_index_i
+
+        b_offset = 0
+        for big_index_i, shape_i, stride_i in zip(
+                out_index[-3::-1],
+                b_shape[-3::-1],
+                b_stride[-3::-1],
+        ):
+            if shape_i != 1:
+                b_offset += stride_i * big_index_i
+
         for a_idx in range(a_shape[-1]):
-            a_index_ideal = out_index[:-2]
-            a_index_ideal += [out_index[-2], a_idx]
-
-            a_index_broadcast = [-1 for _ in a_shape]
-
-            a_shape_ideal = list(out_shape)
-            a_shape_ideal[-2] = a_shape[-2]
-            a_shape_ideal[-1] = a_shape[-1]
-            
-            broadcast_index(a_index_ideal, a_shape_ideal, a_shape, a_index_broadcast)
-
-            b_index_ideal = out_index[:-2]
-            b_index_ideal += [a_idx, out_index[-1]]
-            # TODO: repeat broadcasting madness for b
-            b_index_broadcast = [-1 for _ in b_shape]
-
-            b_shape_ideal = list(out_shape)
-            b_shape_ideal[-2] = b_shape[-2]
-            b_shape_ideal[-1] = b_shape[-1]
-            broadcast_index(b_index_ideal, b_shape_ideal, b_shape, b_index_broadcast)
-# index_to_position =             [i * s for i, s in zip(index, strides)]
-            out[i] += a_storage[index_to_position(a_index_broadcast, a_strides)] * b_storage[index_to_position(b_index_broadcast, b_strides)]
-
+            out[i] += (
+                a_storage[a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * a_idx]
+                * b_storage[b_offset + b_strides[-2] * a_idx + b_strides[-1] * out_index[-1]]
+            )
 
 #
 #   [a, b]
