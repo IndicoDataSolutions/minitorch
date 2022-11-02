@@ -286,38 +286,58 @@ def tensor_matrix_multiply(
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
     # index_to_position(out_index, out_strides)
+    
+    layout = [1] 
+    offset = 1
+    for s in out_shape[::-1]:
+        layout.append(s * offset)
+        offset = s * offset
+    stride_product = layout[:-1][::-1]
+
     for i in range(out.shape[0]):
         out[i] = 0 # Possibly unnecessary
         
         out_index = [-1 for _ in out_shape]
 
-        # TODO: inline this 
-        to_index(i, out_shape, out_index)
+        ordinal = i
+        for k in range(len(stride_product)):
+            s = stride_product[k]
+            out_index[k] = ordinal // s
+            ordinal = ordinal % s
 
-        # a_position = a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * out_index[-1]
         a_offset = 0
-        for big_index_i, shape_i, stride_i in zip(
-                out_index[-3::-1],
-                a_shape[-3::-1],
-                a_stride[-3::-1],
-        ):
-            if shape_i != 1:
-                a_offset += stride_i * big_index_i
+        b_offset = 0        
+        
+        out_index_slice = out_index[-3::-1]
+        a_shape_slice = a_shape[-3::-1]
+        a_stride_slice = a_strides[-3::-1]
+        b_shape_slice = b_shape[-3::-1]
+        b_stride_slice = b_strides[-3::-1]
 
-        b_offset = 0
-        for big_index_i, shape_i, stride_i in zip(
-                out_index[-3::-1],
-                b_shape[-3::-1],
-                b_stride[-3::-1],
-        ):
-            if shape_i != 1:
-                b_offset += stride_i * big_index_i
+        for j in range(len(out_index_slice)):
+
+            big_index_j = out_index_slice[j]
+            if j < len(a_shape_slice):
+                a_shape_j = a_shape_slice[j]
+                a_stride_j = a_stride_slice[j]
+                if a_shape_j != 1:
+                    a_offset += a_stride_j * big_index_j
+        
+            if j < len(b_shape_slice):
+                b_shape_j = b_shape_slice[j]
+                b_stride_j = b_stride_slice[j]
+                if b_shape_j != 1:
+                    b_offset += b_stride_j * big_index_j
+    
 
         for a_idx in range(a_shape[-1]):
+            a_offset_new = a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * a_idx
+            b_offset_new = b_offset + b_strides[-2] * a_idx + b_strides[-1] * out_index[-1]
             out[i] += (
-                a_storage[a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * a_idx]
-                * b_storage[b_offset + b_strides[-2] * a_idx + b_strides[-1] * out_index[-1]]
+                a_storage[a_offset_new]
+                * b_storage[b_offset_new]
             )
+
 
 #
 #   [a, b]
