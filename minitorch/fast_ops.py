@@ -44,7 +44,7 @@ def tensor_map(fn):
 
     def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
         # TODO: Implement for Task 3.1.
-        for i in range(len(out)):
+        for i in prange(len(out)):
             out_index = [-1 for _ in out_shape]
             in_index = [-1 for _ in in_shape]
             # Fills in out_index
@@ -126,7 +126,7 @@ def tensor_zip(fn):
         b_shape,
         b_strides,
     ):
-        for i in range(len(out)):
+        for i in prange(len(out)):
             out_index = [-1 for _ in out_shape]
             a_index = [-1 for _ in a_shape]
             b_index = [-1 for _ in b_shape]
@@ -197,15 +197,22 @@ def tensor_reduce(fn):
     """
 
     def _reduce(out, out_shape, out_strides, a_storage, a_shape, a_strides, reduce_dim):
-        for i in range(a_storage.shape[0]):
-            a_index = [-1 for _ in out_shape]
-            to_index(i, a_shape, a_index)
-            out_index = [0 if i == reduce_dim else idx for i, idx in enumerate(a_index)]
-            out[index_to_position(out_index, out_strides)] = fn(
-                a_storage[index_to_position(a_index, a_strides)],
-                out[index_to_position(out_index, out_strides)],
-            )
+        for i in range(out.shape[0]):
+            out_index = [-1 for _ in out_shape]
+            to_index(i, out_shape, out_index)
+            val = out[index_to_position(out_index, out_strides)]
+            
+            a_original = index_to_position(out_index, a_strides)
+            for reduce_i in range(a_shape[reduce_dim]):
+                a_index = list(out_index)
+                a_index[reduce_dim] = reduce_i
+                assert index_to_position(a_index, a_strides) == a_original + a_strides[reduce_dim] * reduce_i
+                val = fn(
+                    a_storage[a_original + a_strides[reduce_dim] * reduce_i],
+                    val,
+                )
 
+            out[index_to_position(out_index, out_strides)] = val
 
     return njit(parallel=True)(_reduce)
 
@@ -294,7 +301,7 @@ def tensor_matrix_multiply(
         offset = s * offset
     stride_product = layout[:-1][::-1]
 
-    for i in range(out.shape[0]):
+    for i in prange(out.shape[0]):
         out[i] = 0 # Possibly unnecessary
         
         out_index = [-1 for _ in out_shape]
@@ -315,7 +322,6 @@ def tensor_matrix_multiply(
         b_stride_slice = b_strides[-3::-1]
 
         for j in range(len(out_index_slice)):
-
             big_index_j = out_index_slice[j]
             if j < len(a_shape_slice):
                 a_shape_j = a_shape_slice[j]
@@ -329,15 +335,15 @@ def tensor_matrix_multiply(
                 if b_shape_j != 1:
                     b_offset += b_stride_j * big_index_j
     
-
+        out_i = 0
         for a_idx in range(a_shape[-1]):
             a_offset_new = a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * a_idx
             b_offset_new = b_offset + b_strides[-2] * a_idx + b_strides[-1] * out_index[-1]
-            out[i] += (
+            out_i += (
                 a_storage[a_offset_new]
                 * b_storage[b_offset_new]
             )
-
+        out[i] = out_i
 
 #
 #   [a, b]
