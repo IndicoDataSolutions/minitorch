@@ -12,6 +12,7 @@ class IndexingError(RuntimeError):
     "Exception raised for indexing errors."
     pass
 
+
 @njit
 def jit_sum(vals):
     output = 0
@@ -31,7 +32,7 @@ def index_to_position(index, strides):
 
     Returns:
         int : position in storage
-    """    
+    """
     return jit_sum([i * s for i, s in zip(index, strides)])
 
 
@@ -56,6 +57,7 @@ def to_index(ordinal, shape, out_index):
     for i, s in enumerate(strides):
         out_index[i] = ordinal // s
         ordinal = ordinal % s
+
 
 def broadcast_index(big_index, big_shape, shape, out_index):
     """
@@ -87,6 +89,7 @@ def broadcast_index(big_index, big_shape, shape, out_index):
         else:
             out_index[out_i] = big_index_i
 
+
 def shape_broadcast(shape1, shape2):
     """
     Broadcast two shapes to create a new union shape.
@@ -104,10 +107,12 @@ def shape_broadcast(shape1, shape2):
     output_shape = []
     for pair in itertools.zip_longest(shape1[::-1], shape2[::-1], fillvalue=1):
         if min(pair) != 1 and pair[0] != pair[1]:
-            raise IndexingError(f"Cannot broadcast tensor of {shape1} with tensor of {shape2}")
+            raise IndexingError(
+                f"Cannot broadcast tensor of {shape1} with tensor of {shape2}"
+            )
 
         output_shape.insert(0, max(pair))
-    
+
     return tuple(output_shape)
 
 
@@ -146,6 +151,7 @@ class TensorData:
         self.size = int(prod(shape))
         self.shape = shape
         assert len(self._storage) == self.size
+
     def __repr__(self):
         return f"TensorData(storage={self._storage}, strides={self._strides}, shape={self._shape})"
 
@@ -221,7 +227,7 @@ class TensorData:
         assert list(sorted(order)) == list(
             range(len(self.shape))
         ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
-        
+
         strides = tuple(self.strides[idx] for idx in order)
         shape = tuple(self.shape[idx] for idx in order)
         return TensorData(shape=shape, storage=self._storage, strides=strides)

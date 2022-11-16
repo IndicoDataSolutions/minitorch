@@ -197,16 +197,13 @@ def tensor_reduce(fn):
     """
 
     def _reduce(out, out_shape, out_strides, a_storage, a_shape, a_strides, reduce_dim):
-        for i in range(out.shape[0]):
+        for i in prange(out.shape[0]):
             out_index = [-1 for _ in out_shape]
             to_index(i, out_shape, out_index)
             val = out[index_to_position(out_index, out_strides)]
-            
+
             a_original = index_to_position(out_index, a_strides)
             for reduce_i in range(a_shape[reduce_dim]):
-                a_index = list(out_index)
-                a_index[reduce_dim] = reduce_i
-                assert index_to_position(a_index, a_strides) == a_original + a_strides[reduce_dim] * reduce_i
                 val = fn(
                     a_storage[a_original + a_strides[reduce_dim] * reduce_i],
                     val,
@@ -293,8 +290,8 @@ def tensor_matrix_multiply(
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
     # index_to_position(out_index, out_strides)
-    
-    layout = [1] 
+
+    layout = [1]
     offset = 1
     for s in out_shape[::-1]:
         layout.append(s * offset)
@@ -302,8 +299,8 @@ def tensor_matrix_multiply(
     stride_product = layout[:-1][::-1]
 
     for i in prange(out.shape[0]):
-        out[i] = 0 # Possibly unnecessary
-        
+        out[i] = 0  # Possibly unnecessary
+
         out_index = [-1 for _ in out_shape]
 
         ordinal = i
@@ -313,8 +310,8 @@ def tensor_matrix_multiply(
             ordinal = ordinal % s
 
         a_offset = 0
-        b_offset = 0        
-        
+        b_offset = 0
+
         out_index_slice = out_index[-3::-1]
         a_shape_slice = a_shape[-3::-1]
         a_stride_slice = a_strides[-3::-1]
@@ -328,28 +325,30 @@ def tensor_matrix_multiply(
                 a_stride_j = a_stride_slice[j]
                 if a_shape_j != 1:
                     a_offset += a_stride_j * big_index_j
-        
+
             if j < len(b_shape_slice):
                 b_shape_j = b_shape_slice[j]
                 b_stride_j = b_stride_slice[j]
                 if b_shape_j != 1:
                     b_offset += b_stride_j * big_index_j
-    
+
         out_i = 0
         for a_idx in range(a_shape[-1]):
-            a_offset_new = a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * a_idx
-            b_offset_new = b_offset + b_strides[-2] * a_idx + b_strides[-1] * out_index[-1]
-            out_i += (
-                a_storage[a_offset_new]
-                * b_storage[b_offset_new]
+            a_offset_new = (
+                a_offset + a_strides[-2] * out_index[-2] + a_strides[-1] * a_idx
             )
+            b_offset_new = (
+                b_offset + b_strides[-2] * a_idx + b_strides[-1] * out_index[-1]
+            )
+            out_i += a_storage[a_offset_new] * b_storage[b_offset_new]
         out[i] = out_i
+
 
 #
 #   [a, b]
 #   [c, d]
 #   [e, f]
-    
+
 #   [g, h]
 #   [i, j]
 
@@ -362,14 +361,12 @@ def tensor_matrix_multiply(
 #   [e * g + g * i, e * h + f * j]
 
 
-shape =        [1, 5]
+shape = [1, 5]
 big_shape = [6, 5, 5]
 
 index = [5, 4, 1]
 
 out_index = [0, 1]
-
-
 
 
 def matrix_multiply(a, b):

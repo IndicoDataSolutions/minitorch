@@ -60,6 +60,7 @@ def test_one_args(fn, backend, data):
     "Run forward for all one arg functions above."
     t1 = data.draw(tensors(backend=shared[backend]))
     name, base_fn, tensor_fn = fn
+    print(name, base_fn, tensor_fn, t1)
     t2 = tensor_fn(t1)
     for ind in t2._tensor.indices():
         assert_close(t2[ind], base_fn(t1[ind]))
