@@ -1,6 +1,7 @@
 import random
 from .operators import prod
 from numpy import array, float64, ndarray
+import numpy as np
 import numba
 from numba import njit
 import itertools
@@ -52,8 +53,20 @@ def to_index(ordinal, shape, out_index):
       None : Fills in `out_index`.
 
     """
-    # NOTE: does not function unless default strides
-    strides = _strides_from_shape(shape)
+    # NOTE: does not function unless default strides\
+
+    # Inlined version of _strides_from_shape :/
+    size = len(shape) + 1
+    layout = np.empty(size)
+    layout[0] = 1
+    offset = 1
+    idx = 1
+    for s in shape[::-1]:
+        layout[idx] = s * offset
+        offset = s * offset
+        idx += 1
+    strides = layout[:-1][::-1]
+
     for i, s in enumerate(strides):
         out_index[i] = ordinal // s
         ordinal = ordinal % s
@@ -116,7 +129,6 @@ def shape_broadcast(shape1, shape2):
     return tuple(output_shape)
 
 
-@njit
 def _strides_from_shape(shape):
     layout = [1]
     offset = 1

@@ -1,3 +1,4 @@
+from re import A
 from numba import cuda
 import numba
 import numpy as np
@@ -127,9 +128,12 @@ def tensor_zip(fn):
         if i >= out_size:
             return
 
-        out_index = numba.cuda.local.array(shape=out_shape.size, dtype=np.int32)
-        a_index = numba.cuda.local.array(shape=a_shape.size, dtype=np.int32)
-        b_index = numba.cuda.local.array(shape=b_shape.size, dtype=np.int32)
+        # We got fed up trying to match the type signature of numba.cuda.local.array
+        # so we only support tensors with up to 10 indices
+        out_index = numba.cuda.local.array(shape=10, dtype=np.int32)
+        a_index = numba.cuda.local.array(shape=10, dtype=np.int32)
+        b_index = numba.cuda.local.array(shape=10, dtype=np.int32)
+
         # Fills in out_index
         to_index(i, out_shape, out_index)
 
@@ -146,15 +150,15 @@ def tensor_zip(fn):
 
 
 def zip(fn):
-    f = tensor_zip(cuda.jit(device=True)(fn))
+    f = tensor_zip(cuda.jit(device=True, debug=True)(fn))
 
     def ret(a, b):
-        print("A B", a, b)
         c_shape = shape_broadcast(a.shape, b.shape)
         out = a.zeros(c_shape)
         threadsperblock = THREADS_PER_BLOCK
         blockspergrid = (out.size + (threadsperblock - 1)) // threadsperblock
-        print("F", f, fn)
+        print("OUT TUPLE", *out.tuple())
+        print("TYPE OUT SIZE", type(out.tuple()[-1].size))
         f[blockspergrid, threadsperblock](
             *out.tuple(), out.size, *a.tuple(), *b.tuple()
         )
