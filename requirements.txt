@@ -10,3 +10,4 @@ colorama==0.4.3
 pep8-naming==0.11.1
 darglint==1.8.0
 tbb
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
