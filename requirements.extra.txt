@@ -7,3 +7,4 @@ python-mnist
 torch==1.6.0
 datasets==1.15.1
 embeddings==0.0.8
+pillow>=10.0.1 # not directly required, pinned by Snyk to avoid a vulnerability
