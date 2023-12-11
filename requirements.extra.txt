@@ -7,3 +7,6 @@ python-mnist
 torch==1.6.0
 datasets==1.15.1
 embeddings==0.0.8
+certifi>=2023.7.22 # not directly required, pinned by Snyk to avoid a vulnerability
+numpy>=1.21.0rc1 # not directly required, pinned by Snyk to avoid a vulnerability
+requests>=2.31.0 # not directly required, pinned by Snyk to avoid a vulnerability
