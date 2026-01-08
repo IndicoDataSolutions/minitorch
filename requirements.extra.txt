@@ -4,6 +4,7 @@ streamlit==0.75.0
 watchdog==1.0.2
 plotly==4.14.3
 python-mnist
-torch==1.6.0
+torch==2.9.0
 datasets==1.15.1
 embeddings==0.0.8
+urllib3>=2.6.3 # not directly required, pinned by Snyk to avoid a vulnerability
